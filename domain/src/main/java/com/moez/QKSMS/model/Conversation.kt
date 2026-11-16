@@ -38,6 +38,9 @@ open class Conversation(
 
     var name: String = "", // custom title
 
+    /** User-managed category used by the local-first conversation tabs. */
+    var category: String = "General",
+
     var sendAsGroup: Boolean = true,
 ) : RealmObject() {
 
