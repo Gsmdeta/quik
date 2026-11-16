@@ -78,6 +78,8 @@ open class Message : RealmObject() {
     var subject: String = ""
     var textContentType: String = ""
     var parts: RealmList<MmsPart> = RealmList()
+    /** User-managed tag names. Tag definitions remain independent from messages. */
+    var tags: RealmList<String> = RealmList()
     var isEmojiReaction: Boolean = false
     val emojiReactions: RealmList<EmojiReaction> = RealmList()
 
