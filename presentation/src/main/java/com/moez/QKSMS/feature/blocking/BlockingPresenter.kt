@@ -41,6 +41,7 @@ class BlockingPresenter @Inject constructor(
                         Preferences.BLOCKING_MANAGER_CB -> R.string.blocking_manager_call_blocker_title
                         Preferences.BLOCKING_MANAGER_CC -> R.string.blocking_manager_call_control_title
                         Preferences.BLOCKING_MANAGER_SIA -> R.string.blocking_manager_sia_title
+                        Preferences.BLOCKING_MANAGER_SPAMBLOCKER -> R.string.blocking_manager_spamblocker_title
                         else -> R.string.app_name
                     }
                 }
