@@ -37,7 +37,7 @@ class QkRealmMigration @Inject constructor(
 ) : RealmMigration {
 
     companion object {
-        const val SCHEMA_VERSION: Long = 15
+        const val SCHEMA_VERSION: Long = 16
     }
 
     @SuppressLint("ApplySharedPref")
@@ -298,6 +298,27 @@ class QkRealmMigration @Inject constructor(
             }
 
             version ++
+        }
+
+        if (version == 15L) {
+            realm.schema.get("Conversation")
+                ?.addField("category", String::class.java, FieldAttribute.REQUIRED)
+                ?.transform { conversation ->
+                    conversation.setString("category", "General")
+                }
+
+            realm.schema.get("Message")
+                ?.addRealmListField("tags", String::class.java)
+
+            realm.schema.create("VerifiedSender")
+                .addField("address", String::class.java, FieldAttribute.PRIMARY_KEY, FieldAttribute.REQUIRED)
+                .addField("displayName", String::class.java, FieldAttribute.REQUIRED)
+                .addField("description", String::class.java, FieldAttribute.REQUIRED)
+                .addField("logoUri", String::class.java)
+                .addField("source", String::class.java, FieldAttribute.REQUIRED)
+                .addField("verifiedAt", Long::class.java, FieldAttribute.REQUIRED)
+
+            version++
         }
 
         check(version >= SCHEMA_VERSION) {
