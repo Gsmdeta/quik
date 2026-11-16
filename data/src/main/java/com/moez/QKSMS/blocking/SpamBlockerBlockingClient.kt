@@ -96,14 +96,14 @@ class SpamBlockerBlockingClient @Inject constructor(
 
     private fun updateNumbers(method: String, addresses: List<String>): Completable =
         Completable.fromCallable {
-            if (!isAvailable()) return@fromCallable
+            if (!isAvailable()) return@fromCallable Unit
             resolver().call(providerUri, method, null, Bundle().apply {
                 putStringArrayList(KEY_NUMBERS, ArrayList(addresses))
             })
         }
 
     fun setIntegrationEnabled(enabled: Boolean): Completable = Completable.fromCallable {
-        if (!isAvailable()) return@fromCallable
+        if (!isAvailable()) return@fromCallable Unit
         resolver().call(providerUri, METHOD_SET_ENABLED, null, Bundle().apply {
             putBoolean(KEY_ENABLED, enabled)
         })
