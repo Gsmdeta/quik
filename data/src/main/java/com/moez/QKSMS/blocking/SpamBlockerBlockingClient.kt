@@ -21,6 +21,7 @@ import javax.inject.Inject
  */
 class SpamBlockerBlockingClient @Inject constructor(
     private val context: Context,
+    private val qksmsBlockingClient: QksmsBlockingClient,
 ) : BlockingClient {
 
     companion object {
@@ -61,7 +62,7 @@ class SpamBlockerBlockingClient @Inject constructor(
     // SpamBlocker is intentionally message-only. A sender that produces a
     // detected advertisement can still send a legitimate bill or payment.
     override fun isBlacklisted(address: String): Single<BlockingClient.Action> =
-        Single.just(BlockingClient.Action.Unblock)
+        qksmsBlockingClient.isBlacklisted(address)
 
     private fun screen(address: String, body: String, simSlot: Int?): Single<BlockingClient.Action> =
         Single.fromCallable {
@@ -88,16 +89,28 @@ class SpamBlockerBlockingClient @Inject constructor(
             } else {
                 BlockingClient.Action.Unblock
             }
+        }.flatMap { spamBlockerAction ->
+            // Keep QUIK's own manual number list active while SpamBlocker screens message text.
+            // A SpamBlocker hit wins and is deleted even when QUIK's global drop option is off.
+            if (spamBlockerAction is BlockingClient.Action.Block && spamBlockerAction.forceDrop) {
+                Single.just(spamBlockerAction)
+            } else {
+                qksmsBlockingClient.shouldBlock(address).map { qksmsAction ->
+                    when {
+                        qksmsAction is BlockingClient.Action.Block -> qksmsAction
+                        else -> spamBlockerAction
+                    }
+                }
+            }
         }.onErrorReturn {
             Timber.w(it, "SpamBlocker is unavailable")
             BlockingClient.Action.DoNothing
         }
 
-    // Do not copy blocked conversations into SpamBlocker's number database.
-    // Filtering is performed at message level only.
-    override fun block(addresses: List<String>): Completable = Completable.complete()
+    // Manual block/unblock operations continue to use QUIK's local number database.
+    override fun block(addresses: List<String>): Completable = qksmsBlockingClient.block(addresses)
 
-    override fun unblock(addresses: List<String>): Completable = Completable.complete()
+    override fun unblock(addresses: List<String>): Completable = qksmsBlockingClient.unblock(addresses)
 
     fun setIntegrationEnabled(enabled: Boolean): Completable = Completable.fromCallable {
         if (!isAvailable()) return@fromCallable Unit
