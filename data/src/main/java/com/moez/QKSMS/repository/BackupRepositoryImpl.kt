@@ -64,8 +64,10 @@ class BackupRepositoryImpl @Inject constructor(
         val messages: List<BackupMessage> = listOf(),
         val blockedNumbers: List<String> = listOf(),
         val contentFilters: List<BackupContentFilter> = listOf(),
-        val blockingManager: Int = Preferences.BLOCKING_MANAGER_QKSMS,
-        val dropBlockedMessages: Boolean = false,
+        // Nullable so restoring a legacy messages-only backup does not overwrite current
+        // blocking preferences when these fields are absent from its JSON.
+        val blockingManager: Int? = null,
+        val dropBlockedMessages: Boolean? = null,
     )
 
     data class BackupContentFilter(
@@ -337,8 +339,8 @@ class BackupRepositoryImpl @Inject constructor(
             }
 
         backup?.let {
-            prefs.blockingManager.set(it.blockingManager)
-            prefs.drop.set(it.dropBlockedMessages)
+            it.blockingManager?.let(prefs.blockingManager::set)
+            it.dropBlockedMessages?.let(prefs.drop::set)
         }
 
         // Sync the messages
