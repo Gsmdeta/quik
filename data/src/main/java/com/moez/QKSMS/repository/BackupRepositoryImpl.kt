@@ -30,7 +30,10 @@ import androidx.documentfile.provider.DocumentFile
 import com.squareup.moshi.Moshi
 import dev.octoshrimpy.quik.common.util.extensions.now
 import dev.octoshrimpy.quik.model.BackupFile
+import dev.octoshrimpy.quik.model.BlockedNumber
 import dev.octoshrimpy.quik.model.Message
+import dev.octoshrimpy.quik.model.MessageContentFilter
+import dev.octoshrimpy.quik.model.MessageContentFilterData
 import dev.octoshrimpy.quik.util.Preferences
 import io.reactivex.Observable
 import io.reactivex.subjects.BehaviorSubject
@@ -51,12 +54,25 @@ class BackupRepositoryImpl @Inject constructor(
     private val context: Context,
     private val moshi: Moshi,
     private val prefs: Preferences,
-    private val syncRepo: SyncRepository
+    private val syncRepo: SyncRepository,
+    private val blockingRepo: BlockingRepository,
+    private val contentFilterRepo: MessageContentFilterRepository,
 ) : BackupRepository {
 
     data class Backup(
         val messageCount: Int = 0,
-        val messages: List<BackupMessage> = listOf()
+        val messages: List<BackupMessage> = listOf(),
+        val blockedNumbers: List<String> = listOf(),
+        val contentFilters: List<BackupContentFilter> = listOf(),
+        val blockingManager: Int = Preferences.BLOCKING_MANAGER_QKSMS,
+        val dropBlockedMessages: Boolean = false,
+    )
+
+    data class BackupContentFilter(
+        val value: String = "",
+        val caseSensitive: Boolean = false,
+        val isRegex: Boolean = false,
+        val includeContacts: Boolean = false,
     )
 
     /**
@@ -64,7 +80,9 @@ class BackupRepositoryImpl @Inject constructor(
      * needing to parse the entire file
      */
     data class BackupMetadata(
-        val messageCount: Int = 0
+        val messageCount: Int = 0,
+        val blockedNumberCount: Int = 0,
+        val contentFilterCount: Int = 0,
     )
 
     data class BackupMessage(
@@ -136,9 +154,40 @@ class BackupRepositoryImpl @Inject constructor(
         // Update the status, and set the progress to be indeterminate since we can no longer calculate progress
         backupProgress.onNext(BackupRepository.Progress.Saving())
 
+        // Keep QUIK's blocking configuration with the message backup. This lets a restore
+        // move the user's blocker rules to a new install without importing any other app data.
+        val blockedNumbers = Realm.getDefaultInstance().use { realm ->
+            realm.where(BlockedNumber::class.java)
+                .findAll()
+                .createSnapshot()
+                .map { it.address }
+        }
+        val contentFilters = Realm.getDefaultInstance().use { realm ->
+            realm.where(MessageContentFilter::class.java)
+                .findAll()
+                .createSnapshot()
+                .map {
+                    BackupContentFilter(
+                        value = it.value,
+                        caseSensitive = it.caseSensitive,
+                        isRegex = it.isRegex,
+                        includeContacts = it.includeContacts,
+                    )
+                }
+        }
+
         // Convert the data to json
         val adapter = moshi.adapter(Backup::class.java).indent("\t")
-        val json = adapter.toJson(Backup(messageCount, backupMessages)).toByteArray()
+        val json = adapter.toJson(
+            Backup(
+                messageCount = messageCount,
+                messages = backupMessages,
+                blockedNumbers = blockedNumbers,
+                contentFilters = contentFilters,
+                blockingManager = prefs.blockingManager.get(),
+                dropBlockedMessages = prefs.drop.get(),
+            )
+        ).toByteArray()
 
         try {
             val timestamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(now())
@@ -188,7 +237,12 @@ class BackupRepositoryImpl @Inject constructor(
                 ?.use(adapter::fromJson)
                 ?: throw IllegalArgumentException("Couldn't parse backup file")
 
-        return BackupFile(file.lastModified(), metadata.messageCount)
+        return BackupFile(
+            date = file.lastModified(),
+            messages = metadata.messageCount,
+            blockedNumbers = metadata.blockedNumberCount,
+            contentFilters = metadata.contentFilterCount,
+        )
     }
 
     override fun performRestore(uri: Uri) {
@@ -245,6 +299,46 @@ class BackupRepositoryImpl @Inject constructor(
 
         if (errorCount > 0) {
             Timber.w(Exception("Failed to backup $errorCount/$messageCount messages"))
+        }
+
+        // Restore only the blocker configuration carried by this backup. Existing rules are
+        // preserved and duplicate phone numbers/content filters are skipped.
+        backup?.blockedNumbers
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { blockingRepo.blockNumber(*it.toTypedArray()) }
+
+        val existingFilters = Realm.getDefaultInstance().use { realm ->
+            realm.where(MessageContentFilter::class.java)
+                .findAll()
+                .createSnapshot()
+                .map {
+                    BackupContentFilter(
+                        value = it.value,
+                        caseSensitive = it.caseSensitive,
+                        isRegex = it.isRegex,
+                        includeContacts = it.includeContacts,
+                    )
+                }
+                .toSet()
+        }
+
+        backup?.contentFilters
+            .orEmpty()
+            .filterNot(existingFilters::contains)
+            .forEach { filter ->
+                contentFilterRepo.createFilter(
+                    MessageContentFilterData(
+                        value = filter.value,
+                        caseSensitive = filter.caseSensitive,
+                        isRegex = filter.isRegex,
+                        includeContacts = filter.includeContacts,
+                    )
+                )
+            }
+
+        backup?.let {
+            prefs.blockingManager.set(it.blockingManager)
+            prefs.drop.set(it.dropBlockedMessages)
         }
 
         // Sync the messages
