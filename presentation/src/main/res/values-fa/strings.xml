@@ -154,6 +154,7 @@
     <string name="backup_select_location_rationale_title">جای پشتیبان را برگزینید</string>
     <string name="backup_select_location_rationale_message">پوشه‌ای را برای ذخیره پشتیبان‌هایتان انتخاب کنید</string>
     <string name="backup_details">%1$s\n%2$d پیام‌ها</string>
+    <string name="backup_blocker_details">شماره‌های مسدودشده: %1$d\nفیلترهای محتوایی: %2$d</string>
     <string name="backup_selected_backup_error_title">خطا</string>
     <string name="backup_selected_backup_error_message">نمی‌توان پوشه‌ی پشتیبان را خواند</string>
     <string name="backup_selected_backup_details_title">جزئیات پشتیبان</string>
