@@ -62,7 +62,8 @@ class BlockingPresenter @Inject constructor(
         view.blockedNumbersIntent
                 .autoDisposable(view.scope())
                 .subscribe {
-                    if (prefs.blockingManager.get() == Preferences.BLOCKING_MANAGER_QKSMS) {
+                    if (prefs.blockingManager.get() == Preferences.BLOCKING_MANAGER_QKSMS ||
+                        prefs.blockingManager.get() == Preferences.BLOCKING_MANAGER_SPAMBLOCKER) {
                         // TODO: This is a hack, get rid of it once we implement AndroidX navigation
                         view.openBlockedNumbers()
                     } else {
