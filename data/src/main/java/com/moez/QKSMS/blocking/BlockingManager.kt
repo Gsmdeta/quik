@@ -15,6 +15,7 @@ class BlockingManager @Inject constructor(
     private val callBlockerBlockingClient: CallBlockerBlockingClient,
     private val callControlBlockingClient: CallControlBlockingClient,
     private val qksmsBlockingClient: QksmsBlockingClient,
+    private val spamBlockerBlockingClient: SpamBlockerBlockingClient,
     private val shouldIAnswerBlockingClient: ShouldIAnswerBlockingClient
 ) : BlockingClient {
 
@@ -23,6 +24,7 @@ class BlockingManager @Inject constructor(
             Preferences.BLOCKING_MANAGER_CB -> callBlockerBlockingClient
             Preferences.BLOCKING_MANAGER_SIA -> shouldIAnswerBlockingClient
             Preferences.BLOCKING_MANAGER_CC -> callControlBlockingClient
+            Preferences.BLOCKING_MANAGER_SPAMBLOCKER -> spamBlockerBlockingClient
             else -> qksmsBlockingClient
         }
 
@@ -31,6 +33,9 @@ class BlockingManager @Inject constructor(
     override fun getClientCapability(): BlockingClient.Capability = client.getClientCapability()
 
     override fun shouldBlock(address: String): Single<BlockingClient.Action> = client.shouldBlock(address)
+
+    override fun shouldBlock(message: dev.octoshrimpy.quik.model.Message): Single<BlockingClient.Action> =
+        client.shouldBlock(message)
 
     override fun isBlacklisted(address: String): Single<BlockingClient.Action> = client.isBlacklisted(address)
 

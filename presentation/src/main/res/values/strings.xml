@@ -344,6 +344,8 @@
 
     <string name="blocking_manager_title">Blocking Manager</string>
     <string name="blocking_manager_qksms_summary">Built-in blocking functionality in QUIK</string>
+    <string name="blocking_manager_spamblocker_title">SpamBlocker</string>
+    <string name="blocking_manager_spamblocker_summary">AI, regex and database SMS screening from SpamBlocker</string>
     <string name="blocking_manager_call_blocker_title" translatable="false">Call Blocker - Incoming/Outgoing</string>
     <string name="blocking_manager_call_blocker_summary">Block spam messages, numbers &amp; unknown calls with blacklist &amp; Schedule</string>
     <string name="blocking_manager_call_control_title" translatable="false">Call Control</string>
