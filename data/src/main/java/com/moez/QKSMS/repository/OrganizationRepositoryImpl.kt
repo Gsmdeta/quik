@@ -4,6 +4,7 @@ import dev.octoshrimpy.quik.model.Conversation
 import dev.octoshrimpy.quik.model.ConversationCategory
 import dev.octoshrimpy.quik.model.Message
 import dev.octoshrimpy.quik.model.VerifiedSender
+import dev.octoshrimpy.quik.extensions.anyOf
 import io.reactivex.Completable
 import io.reactivex.schedulers.Schedulers
 import io.realm.Realm
@@ -57,7 +58,7 @@ class OrganizationRepositoryImpl @Inject constructor() : OrganizationRepository 
             Realm.getDefaultInstance().use { realm ->
                 realm.executeTransaction {
                     realm.where(Conversation::class.java)
-                        .`in`("id", threadIds.toLongArray())
+                        .anyOf("id", threadIds.toLongArray())
                         .findAll()
                         .forEach { it.category = normalized }
                 }
@@ -81,7 +82,7 @@ class OrganizationRepositoryImpl @Inject constructor() : OrganizationRepository 
             Realm.getDefaultInstance().use { realm ->
                 realm.executeTransaction {
                     realm.where(Message::class.java)
-                        .`in`("id", messageIds.toLongArray())
+                        .anyOf("id", messageIds.toLongArray())
                         .findAll()
                         .forEach { message ->
                             if (enabled && normalized !in message.tags) message.tags.add(normalized)
