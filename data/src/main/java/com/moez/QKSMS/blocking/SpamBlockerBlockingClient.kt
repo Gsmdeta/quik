@@ -58,8 +58,10 @@ class SpamBlockerBlockingClient @Inject constructor(
     override fun shouldBlock(message: Message): Single<BlockingClient.Action> =
         screen(address = message.address, body = message.getText(), simSlot = null)
 
+    // SpamBlocker is intentionally message-only. A sender that produces a
+    // detected advertisement can still send a legitimate bill or payment.
     override fun isBlacklisted(address: String): Single<BlockingClient.Action> =
-        shouldBlock(address)
+        Single.just(BlockingClient.Action.Unblock)
 
     private fun screen(address: String, body: String, simSlot: Int?): Single<BlockingClient.Action> =
         Single.fromCallable {
@@ -81,6 +83,7 @@ class SpamBlockerBlockingClient @Inject constructor(
             if (result.getBoolean(KEY_SHOULD_BLOCK, false)) {
                 BlockingClient.Action.Block(
                     reason = result.getString(KEY_REASON),
+                    forceDrop = true,
                 )
             } else {
                 BlockingClient.Action.Unblock
@@ -90,17 +93,11 @@ class SpamBlockerBlockingClient @Inject constructor(
             BlockingClient.Action.DoNothing
         }
 
-    override fun block(addresses: List<String>): Completable = updateNumbers(METHOD_BLOCK_NUMBERS, addresses)
+    // Do not copy blocked conversations into SpamBlocker's number database.
+    // Filtering is performed at message level only.
+    override fun block(addresses: List<String>): Completable = Completable.complete()
 
-    override fun unblock(addresses: List<String>): Completable = updateNumbers(METHOD_UNBLOCK_NUMBERS, addresses)
-
-    private fun updateNumbers(method: String, addresses: List<String>): Completable =
-        Completable.fromCallable {
-            if (!isAvailable()) return@fromCallable Unit
-            resolver().call(providerUri, method, null, Bundle().apply {
-                putStringArrayList(KEY_NUMBERS, ArrayList(addresses))
-            })
-        }
+    override fun unblock(addresses: List<String>): Completable = Completable.complete()
 
     fun setIntegrationEnabled(enabled: Boolean): Completable = Completable.fromCallable {
         if (!isAvailable()) return@fromCallable Unit
