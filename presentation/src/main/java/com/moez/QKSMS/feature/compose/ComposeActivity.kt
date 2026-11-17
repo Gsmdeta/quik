@@ -31,6 +31,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.text.InputType
 import android.provider.MediaStore
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -42,6 +43,7 @@ import android.view.DragEvent.ACTION_DROP
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.EditText
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
@@ -118,6 +120,8 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
     override val messagePartClickIntent: Subject<Long> by lazy { messageAdapter.partClicks }
     override val messagePartContextMenuRegistrar: Subject<View> by lazy { messageAdapter.partContextMenuRegistrar }
     override val messagesSelectedIntent by lazy { messageAdapter.selectionChanges }
+    private val tagSelectedSubject: Subject<String> = PublishSubject.create()
+    override val tagSelectedIntent: Observable<String> = tagSelectedSubject
     override val cancelDelayedIntent: Subject<Long> by lazy { messageAdapter.cancelSendingClicks }
     override val sendDelayedNowIntent: Subject<Long> by lazy { messageAdapter.sendNowClicks }
     override val resendIntent: Subject<Long> by lazy { messageAdapter.resendClicks }
@@ -477,6 +481,7 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
         binding.toolbar.menu.findItem(R.id.delete)?.isVisible = !state.editingMode && ((state.selectedMessages > 0) || state.canSend)
         binding.toolbar.menu.findItem(R.id.forward)?.isVisible = !state.editingMode && state.selectedMessages == 1
         binding.toolbar.menu.findItem(R.id.show_status)?.isVisible = !state.editingMode && state.selectedMessages > 0
+        binding.toolbar.menu.findItem(R.id.tag)?.isVisible = !state.editingMode && state.selectedMessages > 0
         binding.toolbar.menu.findItem(R.id.previous)?.isVisible = state.selectedMessages == 0 && state.query.isNotEmpty()
         binding.toolbar.menu.findItem(R.id.next)?.isVisible = state.selectedMessages == 0 && state.query.isNotEmpty()
         binding.toolbar.menu.findItem(R.id.clear)?.isVisible = state.selectedMessages == 0 && state.query.isNotEmpty()
@@ -757,6 +762,26 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
         AlertDialog.Builder(this)
             .setTitle(R.string.compose_reactions_title)
             .setMessage(reactions.joinToString("\n"))
+            .show()
+    }
+
+    override fun showTagDialog(tags: List<String>) {
+        val labels = tags + getString(R.string.message_tag_new)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.message_tag)
+            .setItems(labels.toTypedArray()) { _, which ->
+                if (which < tags.size) tagSelectedSubject.onNext(tags[which])
+                else {
+                    val input = EditText(this).apply { inputType = InputType.TYPE_CLASS_TEXT }
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.message_tag_new)
+                        .setView(input)
+                        .setPositiveButton(R.string.button_save) { _, _ -> tagSelectedSubject.onNext(input.text.toString()) }
+                        .setNegativeButton(R.string.button_cancel, null)
+                        .show()
+                }
+            }
+            .setNegativeButton(R.string.button_cancel, null)
             .show()
     }
 

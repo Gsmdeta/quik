@@ -56,7 +56,8 @@ class ConversationRepositoryImpl @Inject constructor(
     private fun getConversationsBase(
         realm: Realm,
         unreadAtTop: Boolean,
-        archived: Boolean
+        archived: Boolean,
+        category: String? = null,
     ): RealmQuery<Conversation> {
         val sortOrder = mutableListOf("pinned", "draft", "lastMessage.date")
         val sortDirections = mutableListOf(Sort.DESCENDING, Sort.DESCENDING, Sort.DESCENDING)
@@ -70,6 +71,7 @@ class ConversationRepositoryImpl @Inject constructor(
             .where(Conversation::class.java)
             .notEqualTo("id", 0L)
             .equalTo("archived", archived)
+            .let { query -> category?.let { query.equalTo("category", it) } ?: query }
             .equalTo("blocked", false)
             .isNotEmpty("recipients")
             .beginGroup()
@@ -82,9 +84,10 @@ class ConversationRepositoryImpl @Inject constructor(
 
     override fun getConversations(
         unreadAtTop: Boolean,
-        archived: Boolean
+        archived: Boolean,
+        category: String?
     ): RealmResults<Conversation> =
-        getConversationsBase(Realm.getDefaultInstance(), unreadAtTop, archived)
+        getConversationsBase(Realm.getDefaultInstance(), unreadAtTop, archived, category)
             .findAllAsync()
 
     override fun getConversationsSnapshot(unreadAtTop: Boolean): List<Conversation> =

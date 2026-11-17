@@ -105,6 +105,7 @@
                 android:value=".common.util.QkChooserTargetService" />
         </activity>
         <activity android:name=".feature.messageutils.MessageUtilsActivity" />
+        <activity android:name=".feature.organization.OrganizationActivity" />
         <activity android:name=".feature.settings.SettingsActivity" />
         <activity android:name=".feature.settings.about.AboutActivity" />
         <activity

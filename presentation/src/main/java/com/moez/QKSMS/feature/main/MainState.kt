@@ -43,7 +43,8 @@ data class Inbox(
     val markPinned: Boolean = true,
     val markRead: Boolean = false,
     val data: RealmResults<Conversation>? = null,
-    val selected: Int = 0
+    val selected: Int = 0,
+    val category: String? = null,
 ) : MainPage()
 
 data class Searching(
@@ -56,5 +57,6 @@ data class Archived(
     val markPinned: Boolean = true,
     val markRead: Boolean = false,
     val data: RealmResults<Conversation>? = null,
-    val selected: Int = 0
+    val selected: Int = 0,
+    val category: String? = null,
 ) : MainPage()

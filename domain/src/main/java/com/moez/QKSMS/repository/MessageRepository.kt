@@ -99,6 +99,8 @@ interface MessageRepository {
 
     fun deleteMessages(messageIds: Collection<Long>)
 
+    fun updateTags(messageIds: Collection<Long>, tag: String, enabled: Boolean = true): Completable
+
     fun getOldMessageCounts(maxAgeDays: Int): Map<Long, Int>
 
     fun deleteOldMessages(maxAgeDays: Int)

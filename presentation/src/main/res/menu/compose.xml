@@ -96,6 +96,12 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/tag"
+        android:title="@string/message_tag"
+        android:visible="false"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/previous"
         android:icon="@drawable/ic_keyboard_arrow_up_black_24dp"
         android:title="@string/compose_menu_previous"

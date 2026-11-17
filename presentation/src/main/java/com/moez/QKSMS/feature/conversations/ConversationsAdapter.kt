@@ -35,6 +35,7 @@ import dev.octoshrimpy.quik.common.util.extensions.resolveThemeColor
 import dev.octoshrimpy.quik.common.util.extensions.setTint
 import dev.octoshrimpy.quik.databinding.ConversationListItemBinding
 import dev.octoshrimpy.quik.model.Conversation
+import dev.octoshrimpy.quik.repository.OrganizationRepository
 import dev.octoshrimpy.quik.util.PhoneNumberUtils
 import io.reactivex.disposables.CompositeDisposable
 import javax.inject.Inject
@@ -44,7 +45,8 @@ class ConversationsAdapter @Inject constructor(
     private val context: Context,
     private val dateFormatter: DateFormatter,
     private val navigator: Navigator,
-    private val phoneNumberUtils: PhoneNumberUtils
+    private val phoneNumberUtils: PhoneNumberUtils,
+    private val organizationRepo: OrganizationRepository,
 ) : QkRealmAdapter<Conversation, QkBindingViewHolder<ConversationListItemBinding>>() {
     private val disposables = CompositeDisposable()
 
@@ -115,7 +117,9 @@ class ConversationsAdapter @Inject constructor(
         binding.avatars.recipients = conversation.recipients
         binding.title.collapseEnabled = conversation.recipients.size > 1
         binding.title.text = buildSpannedString {
-            append(conversation.getTitle())
+            val verified = recipient?.let { organizationRepo.getVerifiedSender(it.address) }
+            append(verified?.displayName ?: conversation.getTitle())
+            if (verified != null) append(" ✓")
         }
         binding.date.text = conversation.date.takeIf { it > 0 }?.let(dateFormatter::getConversationTimestamp)
         binding.snippet.text = when {
@@ -123,6 +127,10 @@ class ConversationsAdapter @Inject constructor(
             conversation.me -> context.getString(R.string.main_sender_you, conversation.snippet)
             else -> conversation.snippet
         }
+        conversation.lastMessage?.tags
+            ?.takeIf { it.isNotEmpty() }
+            ?.joinToString(" ") { tag -> "#$tag" }
+            ?.let { tags -> binding.snippet.text = "$tags  ${binding.snippet.text}" }
 
         // Make the preview in italics if draft
         if (conversation.draft.isNotEmpty()) binding.snippet.setTypeface(null, Typeface.ITALIC)

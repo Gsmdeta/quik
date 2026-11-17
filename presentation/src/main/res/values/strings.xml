@@ -238,6 +238,18 @@
     <string name="backup_progress_syncing">Syncing messages…</string>
     <string name="backup_progress_finished">Finished!</string>
     <string name="backup_notification_channel_name">Backup and restore</string>
+    <string name="category_choose">Conversation category</string>
+    <string name="category_all">All conversations</string>
+    <string name="category_move">Move to category</string>
+    <string name="organization_title">Organization</string>
+    <string name="organization_categories">Conversation categories</string>
+    <string name="organization_tags">Message tags</string>
+    <string name="organization_verified_senders">Verified senders</string>
+    <string name="organization_add">Add</string>
+    <string name="organization_empty">Nothing has been added yet</string>
+    <string name="message_tag">Tag message</string>
+    <string name="message_tag_new">New tag…</string>
+    <string name="message_tag_empty">No tags yet</string>
 
     <string name="clipboard_too_large_to_copy">Data size exceeds clipboard limit</string>
     <string name="clipboard_unable_to_copy_to">Unable to copy to the clipboard</string>

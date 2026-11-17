@@ -47,6 +47,7 @@ import dev.octoshrimpy.quik.model.SyncLog
 import dev.octoshrimpy.quik.repository.ConversationRepository
 import dev.octoshrimpy.quik.repository.EmojiReactionRepository
 import dev.octoshrimpy.quik.repository.MessageRepository
+import dev.octoshrimpy.quik.repository.OrganizationRepository
 import dev.octoshrimpy.quik.repository.ScheduledMessageRepository
 import dev.octoshrimpy.quik.repository.SyncRepository
 import dev.octoshrimpy.quik.util.Preferences
@@ -69,6 +70,7 @@ class MainViewModel @Inject constructor(
     private val changelogManager: ChangelogManager,
     private val conversationRepo: ConversationRepository,
     private val messageRepo: MessageRepository,
+    private val organizationRepo: OrganizationRepository,
     private val deleteConversations: DeleteConversations,
     private val markArchived: MarkArchived,
     private val markPinned: MarkPinned,
@@ -169,11 +171,17 @@ class MainViewModel @Inject constructor(
             .withLatestFrom(state) { _, state ->
                 if (state.page is Inbox)
                     newState {
-                        copy(page = Inbox(data = conversationRepo.getConversations(prefs.unreadAtTop.get())))
+                        val page = state.page as Inbox
+                        copy(page = page.copy(data = conversationRepo.getConversations(
+                            prefs.unreadAtTop.get(), category = page.category
+                        )))
                     }
                 else if (state.page is Archived)
                     newState {
-                        copy(page = Inbox(data = conversationRepo.getConversations(prefs.unreadAtTop.get(), true)))
+                        val page = state.page as Archived
+                        copy(page = page.copy(data = conversationRepo.getConversations(
+                            prefs.unreadAtTop.get(), true, page.category
+                        )))
                     }
             }
             .autoDisposable(view.scope())
@@ -385,6 +393,57 @@ class MainViewModel @Inject constructor(
             }
             .autoDisposable(view.scope())
             .subscribe()
+
+        view.optionsItemIntent
+            .filter { itemId -> itemId == R.id.categories }
+            .withLatestFrom(state) { _, state ->
+                val selected = when (state.page) {
+                    is Inbox -> state.page.category
+                    is Archived -> state.page.category
+                    else -> null
+                }
+                view.showCategoryDialog(organizationRepo.getCategories(), selected)
+            }
+            .autoDisposable(view.scope())
+            .subscribe()
+
+        view.optionsItemIntent
+            .filter { itemId -> itemId == R.id.move_category }
+            .autoDisposable(view.scope())
+            .subscribe { view.showCategoryDialog(organizationRepo.getCategories(), null) }
+
+        view.categorySelectedIntent
+            .withLatestFrom(state, view.conversationsSelectedIntent) { category, state, selected ->
+                Triple(category, state, selected)
+            }
+            .autoDisposable(view.scope())
+            .subscribe { (category, currentState, selected) ->
+                if (selected.isNotEmpty() && currentState.page.selected > 0) {
+                    organizationRepo.setConversationCategory(selected, category ?: "General")
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe { view.clearSelection() }
+                    return@subscribe
+                }
+                when (currentState.page) {
+                    is Inbox -> newState {
+                        copy(page = currentState.page.copy(
+                            category = category,
+                            data = conversationRepo.getConversations(
+                                prefs.unreadAtTop.get(), category = category
+                            )
+                        ))
+                    }
+                    is Archived -> newState {
+                        copy(page = currentState.page.copy(
+                            category = category,
+                            data = conversationRepo.getConversations(
+                                prefs.unreadAtTop.get(), true, category
+                            )
+                        ))
+                    }
+                    else -> Unit
+                }
+            }
 
         view.optionsItemIntent
             .filter { itemId -> itemId == R.id.select_all }

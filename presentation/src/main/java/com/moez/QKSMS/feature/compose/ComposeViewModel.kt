@@ -72,6 +72,7 @@ import dev.octoshrimpy.quik.model.getText
 import dev.octoshrimpy.quik.repository.ContactRepository
 import dev.octoshrimpy.quik.repository.ConversationRepository
 import dev.octoshrimpy.quik.repository.MessageRepository
+import dev.octoshrimpy.quik.repository.OrganizationRepository
 import dev.octoshrimpy.quik.repository.ScheduledMessageRepository
 import dev.octoshrimpy.quik.util.ActiveSubscriptionObservable
 import dev.octoshrimpy.quik.util.FileUtils
@@ -117,6 +118,7 @@ class ComposeViewModel @Inject constructor(
     private val markRead: MarkRead,
     private val messageDetailsFormatter: MessageDetailsFormatter,
     private val messageRepo: MessageRepository,
+    private val organizationRepo: OrganizationRepository,
     private val scheduledMessageRepo: ScheduledMessageRepository,
     private val navigator: Navigator,
     private val externalNavigator: ExternalNavigator,
@@ -481,6 +483,20 @@ class ComposeViewModel @Inject constructor(
                 else
                     Timber.d("Created and shared messages text file: $filename")
             }
+            .autoDisposable(view.scope())
+            .subscribe { view.clearSelection() }
+
+        // Apply a local tag to the selected messages
+        view.optionsItemIntent
+            .filter { it == R.id.tag }
+            .withLatestFrom(view.messagesSelectedIntent) { _, messages -> messages }
+            .autoDisposable(view.scope())
+            .subscribe { view.showTagDialog(organizationRepo.getTags()) }
+
+        view.tagSelectedIntent
+            .withLatestFrom(view.messagesSelectedIntent) { tag, messages -> tag to messages }
+            .observeOn(Schedulers.io())
+            .flatMapCompletable { (tag, messages) -> messageRepo.updateTags(messages, tag) }
             .autoDisposable(view.scope())
             .subscribe { view.clearSelection() }
 

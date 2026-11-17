@@ -118,6 +118,7 @@ class MainActivity : QkThemedActivity(), MainView {
     override val changelogMoreIntent by lazy { changelogDialog.moreClicks }
     override val undoArchiveIntent: Subject<Unit> = PublishSubject.create()
     override val snackbarButtonIntent: Subject<Unit> = PublishSubject.create()
+    override val categorySelectedIntent: Subject<String?> = PublishSubject.create()
 
     private val viewModel by lazy {
         ViewModelProviders.of(this, viewModelFactory)[MainViewModel::class.java]
@@ -242,6 +243,12 @@ class MainActivity : QkThemedActivity(), MainView {
                 state.page is Searching
         )
         binding.toolbarTitle.setVisible(binding.toolbarSearch.visibility != View.VISIBLE)
+        val selectedCategory = when (state.page) {
+            is Inbox -> state.page.category
+            is Archived -> state.page.category
+            else -> null
+        }
+        binding.toolbarSearch.hint = selectedCategory ?: getString(R.string.title_conversations)
 
         binding.toolbar.menu.apply {
             findItem(R.id.select_all)?.isVisible =
@@ -260,6 +267,10 @@ class MainActivity : QkThemedActivity(), MainView {
                     selectedConversations > 1
             findItem(R.id.block)?.isVisible = selectedConversations != 0
             findItem(R.id.rename)?.isVisible = selectedConversations == 1
+            findItem(R.id.categories)?.isVisible = selectedConversations == 0 &&
+                    (state.page is Inbox || state.page is Archived)
+            findItem(R.id.move_category)?.isVisible = selectedConversations > 0 &&
+                    (state.page is Inbox || state.page is Archived)
         }
 
         binding.drawer.rateLayout.setVisible(state.showRating)
@@ -462,6 +473,18 @@ class MainActivity : QkThemedActivity(), MainView {
             it.setActionTextColor(colors.theme().theme)
             it.show()
         }
+
+    override fun showCategoryDialog(categories: List<String>, selected: String?) {
+        val labels = listOf(getString(R.string.category_all)) + categories
+        AlertDialog.Builder(this)
+            .setTitle(R.string.category_choose)
+            .setSingleChoiceItems(labels.toTypedArray(), (selected?.let { categories.indexOf(it) + 1 } ?: 0)) { dialog, which ->
+                categorySelectedIntent.onNext(which.takeIf { it > 0 }?.let { categories[it - 1] })
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.button_cancel, null)
+            .show()
+    }
 
     override fun onCreateOptionsMenu(menu: Menu?) =
         menu?.let {

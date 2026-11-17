@@ -42,6 +42,7 @@ interface MainView : QkView<MainState> {
     val changelogMoreIntent: Observable<*>
     val undoArchiveIntent: Observable<Unit>
     val snackbarButtonIntent: Observable<Unit>
+    val categorySelectedIntent: Observable<String?>
 
     fun requestDefaultSms()
     fun requestPermissions()
@@ -55,6 +56,7 @@ interface MainView : QkView<MainState> {
     fun showChangelog(changelog: ChangelogManager.CumulativeChangelog)
     fun showArchivedSnackbar(countConversationsArchived: Int, isArchiving: Boolean)
     fun drawerToggled(opened: Boolean)
+    fun showCategoryDialog(categories: List<String>, selected: String?)
 }
 
 enum class NavItem { BACK, INBOX, ARCHIVED, BACKUP, SCHEDULED, BLOCKING, MESSAGE_UTILS, SETTINGS, ABOUT, INVITE }
