@@ -61,10 +61,10 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
 
         val message = messageRepo.getMessage(messageId) ?: return Result.failure(inputData)
 
-        val action = blockingClient.shouldBlock(message.address).blockingGet()
+        val action = blockingClient.shouldBlock(message).blockingGet()
 
         when {
-            ((action is BlockingClient.Action.Block) && prefs.drop.get()) -> {
+            ((action is BlockingClient.Action.Block) && (prefs.drop.get() || action.forceDrop)) -> {
                 // blocked and 'drop blocked' remove from db and don't continue
                 Timber.v("address is blocked and drop blocked is on. dropped")
                 messageRepo.deleteMessages(listOf(message.id))

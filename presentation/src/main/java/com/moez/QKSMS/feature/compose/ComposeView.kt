@@ -51,6 +51,7 @@ interface ComposeView : QkView<ComposeState> {
     val messagePartClickIntent: Subject<Long>
     val messagePartContextMenuRegistrar: Subject<View>
     val messagesSelectedIntent: Observable<List<Long>>
+    val tagSelectedIntent: Observable<String>
     val cancelDelayedIntent: Subject<Long>
     val sendDelayedNowIntent: Subject<Long>
     val resendIntent: Subject<Long>
@@ -110,6 +111,7 @@ interface ComposeView : QkView<ComposeState> {
     fun showDeleteDialog(messages: List<Long>)
     fun showClearCurrentMessageDialog()
     fun showReactionsDialog(reactions: List<String>)
+    fun showTagDialog(tags: List<String>)
     fun startSpeechRecognition()
     fun focusMessage()
 }

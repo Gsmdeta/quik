@@ -20,6 +20,7 @@ package dev.octoshrimpy.quik.blocking
 
 import io.reactivex.Completable
 import io.reactivex.Single
+import dev.octoshrimpy.quik.model.Message
 
 interface BlockingClient {
 
@@ -30,7 +31,11 @@ interface BlockingClient {
     }
 
     sealed class Action {
-        class Block(val reason: String? = null) : Action()
+        class Block(
+            val reason: String? = null,
+            /** Allows a client to request deletion independently of the global drop setting. */
+            val forceDrop: Boolean = false,
+        ) : Action()
         object Unblock : Action()
 
         // We only need these for Should I Answer, because they don't allow us to block numbers in their app directly.
@@ -61,6 +66,12 @@ interface BlockingClient {
      * Returns the recommendation action to perform given a message from the [address]
      */
     fun shouldBlock(address: String): Single<Action>
+
+    /**
+     * Message-aware screening hook. Existing number-only blocking clients keep
+     * their old behaviour; content-aware clients can inspect the complete SMS.
+     */
+    fun shouldBlock(message: Message): Single<Action> = shouldBlock(message.address)
 
     /**
      * Returns whether or not the [address] is in the blocking manager's blacklist

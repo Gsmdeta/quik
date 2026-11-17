@@ -8,6 +8,7 @@ import dev.octoshrimpy.quik.blocking.BlockingClient
 import dev.octoshrimpy.quik.blocking.CallBlockerBlockingClient
 import dev.octoshrimpy.quik.blocking.CallControlBlockingClient
 import dev.octoshrimpy.quik.blocking.QksmsBlockingClient
+import dev.octoshrimpy.quik.blocking.SpamBlockerBlockingClient
 import dev.octoshrimpy.quik.blocking.ShouldIAnswerBlockingClient
 import dev.octoshrimpy.quik.common.ExternalNavigator
 import dev.octoshrimpy.quik.common.base.QkPresenter
@@ -27,12 +28,14 @@ class BlockingManagerPresenter @Inject constructor(
     private val externalNavigator: ExternalNavigator,
     private val prefs: Preferences,
     private val qksms: QksmsBlockingClient,
+    private val spamBlocker: SpamBlockerBlockingClient,
     private val shouldIAnswer: ShouldIAnswerBlockingClient
 ) : QkPresenter<BlockingManagerView, BlockingManagerState>(BlockingManagerState(
         blockingManager = prefs.blockingManager.get(),
         callBlockerInstalled = callBlocker.isAvailable(),
         callControlInstalled = callControl.isAvailable(),
-        siaInstalled = shouldIAnswer.isAvailable()
+        siaInstalled = shouldIAnswer.isAvailable(),
+        spamBlockerInstalled = spamBlocker.isAvailable(),
 )) {
 
     init {
@@ -61,14 +64,33 @@ class BlockingManagerPresenter @Inject constructor(
                 .autoDisposable(view.scope())
                 .subscribe { available -> newState { copy(siaInstalled = available) } }
 
+        view.activityResumed()
+                .map { spamBlocker.isAvailable() }
+                .distinctUntilChanged()
+                .autoDisposable(view.scope())
+                .subscribe { available -> newState { copy(spamBlockerInstalled = available) } }
+
         view.qksmsClicked()
                 .observeOn(Schedulers.io())
                 .map { getAddressesToBlock(qksms) }
                 .switchMap { numbers -> qksms.block(numbers).andThen(Observable.just(Unit)) } // Hack
                 .autoDisposable(view.scope())
                 .subscribe {
+                    spamBlocker.setIntegrationEnabled(false).subscribe()
                     prefs.blockingManager.set(Preferences.BLOCKING_MANAGER_QKSMS)
                 }
+
+        view.spamBlockerClicked()
+                .filter { spamBlocker.isAvailable() }
+                .observeOn(Schedulers.io())
+                .map { getAddressesToBlock(spamBlocker) }
+                .switchMap { numbers ->
+                    spamBlocker.block(numbers)
+                        .andThen(spamBlocker.setIntegrationEnabled(true))
+                        .andThen(Observable.just(Unit))
+                }
+                .autoDisposable(view.scope())
+                .subscribe { prefs.blockingManager.set(Preferences.BLOCKING_MANAGER_SPAMBLOCKER) }
 
         view.callBlockerClicked()
                 .filter {
@@ -82,6 +104,7 @@ class BlockingManagerPresenter @Inject constructor(
                 }
                 .autoDisposable(view.scope())
                 .subscribe {
+                    spamBlocker.setIntegrationEnabled(false).subscribe()
                     prefs.blockingManager.set(Preferences.BLOCKING_MANAGER_CB)
                 }
 
@@ -112,6 +135,7 @@ class BlockingManagerPresenter @Inject constructor(
                 .switchMap { numbers -> callControl.block(numbers).andThen(Observable.just(Unit)) } // Hack
                 .autoDisposable(view.scope())
                 .subscribe {
+                    spamBlocker.setIntegrationEnabled(false).subscribe()
                     callControl.shouldBlock("callcontrol").blockingGet()
                     prefs.blockingManager.set(Preferences.BLOCKING_MANAGER_CC)
                 }
@@ -128,6 +152,7 @@ class BlockingManagerPresenter @Inject constructor(
                 }
                 .autoDisposable(view.scope())
                 .subscribe {
+                    spamBlocker.setIntegrationEnabled(false).subscribe()
                     prefs.blockingManager.set(Preferences.BLOCKING_MANAGER_SIA)
                 }
     }

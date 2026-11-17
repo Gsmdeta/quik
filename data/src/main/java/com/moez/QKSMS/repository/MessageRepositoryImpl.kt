@@ -65,6 +65,8 @@ import dev.octoshrimpy.quik.util.Preferences
 import dev.octoshrimpy.quik.util.sha256
 import dev.octoshrimpy.quik.util.tryOrNull
 import io.reactivex.Flowable
+import io.reactivex.Completable
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.Subject
 import io.realm.Case
@@ -997,6 +999,23 @@ open class MessageRepositoryImpl @Inject constructor(
                     realm.executeTransaction { messages.deleteAllFromRealm() }
                 } ?: Unit
         }
+
+    override fun updateTags(messageIds: Collection<Long>, tag: String, enabled: Boolean) =
+        Completable.fromAction {
+            val normalized = tag.trim()
+            if (normalized.isEmpty()) return@fromAction
+            Realm.getDefaultInstance().use { realm ->
+                realm.executeTransaction {
+                    realm.where(Message::class.java)
+                        .anyOf("id", messageIds.toLongArray())
+                        .findAll()
+                        .forEach { message ->
+                            if (enabled && normalized !in message.tags) message.tags.add(normalized)
+                            if (!enabled) message.tags.remove(normalized)
+                        }
+                }
+            }
+        }.subscribeOn(Schedulers.io())
 
     override fun getOldMessageCounts(maxAgeDays: Int) =
         Realm.getDefaultInstance().use { realm ->

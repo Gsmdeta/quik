@@ -138,7 +138,12 @@ class BackupPresenter @Inject constructor(
                     val backupFile = backupRepo.parseBackup(uri)
                     val date = dateFormatter.getDetailedTimestamp(backupFile.date)
                     val details =
-                        context.getString(R.string.backup_details, date, backupFile.messages)
+                        context.getString(R.string.backup_details, date, backupFile.messages) + "\n" +
+                            context.getString(
+                                R.string.backup_blocker_details,
+                                backupFile.blockedNumbers,
+                                backupFile.contentFilters,
+                            )
                     newState { copy(selectedBackupDetails = details) }
                 } catch (e: Exception) {
                     newState { copy(showSelectedBackupError = true) }

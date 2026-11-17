@@ -22,6 +22,7 @@ import android.net.Uri
 import dev.octoshrimpy.quik.model.Attachment
 import dev.octoshrimpy.quik.model.Message
 import dev.octoshrimpy.quik.model.MmsPart
+import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.realm.RealmResults
@@ -98,6 +99,8 @@ interface MessageRepository {
     fun insertReceivedSms(subId: Int, address: String, body: String, sentTime: Long): Message
 
     fun deleteMessages(messageIds: Collection<Long>)
+
+    fun updateTags(messageIds: Collection<Long>, tag: String, enabled: Boolean = true): Completable
 
     fun getOldMessageCounts(maxAgeDays: Int): Map<Long, Int>
 

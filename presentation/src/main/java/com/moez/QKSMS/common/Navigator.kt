@@ -32,6 +32,7 @@ import dev.octoshrimpy.quik.feature.conversationinfo.ConversationInfoActivity
 import dev.octoshrimpy.quik.feature.gallery.GalleryActivity
 import dev.octoshrimpy.quik.feature.main.MainActivity
 import dev.octoshrimpy.quik.feature.messageutils.MessageUtilsActivity
+import dev.octoshrimpy.quik.feature.organization.OrganizationActivity
 import dev.octoshrimpy.quik.feature.scheduled.ScheduledActivity
 import dev.octoshrimpy.quik.feature.settings.SettingsActivity
 import dev.octoshrimpy.quik.model.ScheduledMessage
@@ -131,6 +132,10 @@ class Navigator @Inject constructor(
 
     fun showSettings() {
         startActivity(Intent(context, SettingsActivity::class.java))
+    }
+
+    fun showOrganization() {
+        startActivity(Intent(context, OrganizationActivity::class.java))
     }
 
     fun showAbout() {

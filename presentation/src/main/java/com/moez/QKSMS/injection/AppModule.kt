@@ -85,6 +85,8 @@ import dev.octoshrimpy.quik.repository.MessageContentFilterRepository
 import dev.octoshrimpy.quik.repository.MessageContentFilterRepositoryImpl
 import dev.octoshrimpy.quik.repository.MessageRepository
 import dev.octoshrimpy.quik.repository.MessageRepositoryImpl
+import dev.octoshrimpy.quik.repository.OrganizationRepository
+import dev.octoshrimpy.quik.repository.OrganizationRepositoryImpl
 import dev.octoshrimpy.quik.repository.ScheduledMessageRepository
 import dev.octoshrimpy.quik.repository.ScheduledMessageRepositoryImpl
 import dev.octoshrimpy.quik.repository.SyncRepository
@@ -210,6 +212,9 @@ class AppModule(private var application: Application) {
 
     @Provides
     fun provideMessageRepository(repository: MessageRepositoryImpl): MessageRepository = repository
+
+    @Provides
+    fun provideOrganizationRepository(repository: OrganizationRepositoryImpl): OrganizationRepository = repository
 
     @Provides
     fun provideScheduledMessagesRepository(repository: ScheduledMessageRepositoryImpl): ScheduledMessageRepository = repository
