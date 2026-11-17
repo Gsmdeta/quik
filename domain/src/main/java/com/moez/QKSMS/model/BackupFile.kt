@@ -20,5 +20,7 @@ package dev.octoshrimpy.quik.model
 
 data class BackupFile(
     val date: Long,
-    val messages: Int
+    val messages: Int,
+    val blockedNumbers: Int = 0,
+    val contentFilters: Int = 0,
 )
